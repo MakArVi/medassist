@@ -5,15 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Прототип чата пациента</title>
 <style>
-:root{--bg:#f7f4fd;--card:#ffffff;--text:#241b3a;--muted:#7a6f93;--line:#e4dcf5;--acc:#7c4dff;--accbg:#efe9ff;--bot:#f3effc;--warn:#b42318;--warnbg:#fdecea;--hl:#fff3bf}
+:root{--bg:#ffffff;--card:#ffffff;--text:#2b2540;--muted:#8a82a3;--line:#ece6f9;--acc:#8471C9;--accbg:#F3EEFF;--bot:#F3EEFF;--warn:#b42318;--warnbg:#fdecea;--hl:#e6dcff}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
+body{background:var(--bg);color:var(--text);font:300 15px/1.55 "Helvetica Neue",Helvetica,Arial,sans-serif;display:flex;flex-direction:column}
+b,strong,h2,h3{font-weight:400}
 button{font:inherit;color:inherit;cursor:pointer}
-.demo{background:#efe9ff;color:#4b2fb0;font-size:12.5px;text-align:center;padding:4px 8px}
+.demo{background:#F3EEFF;color:#6a58a8;font-size:12.5px;text-align:center;padding:4px 8px}
 .top{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--line)}
 .burger{border:1px solid var(--line);background:none;border-radius:8px;width:38px;height:38px;font-size:20px}
-.banner{flex:1;min-width:0;background:var(--accbg);border:1px solid var(--acc);border-radius:8px;padding:6px 12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.banner{flex:1;min-width:0;background:var(--accbg);border:0;border-radius:8px;padding:6px 12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
 .banner b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .banner small{color:var(--muted)}
 .tbtn{border:1px solid var(--acc);color:var(--acc);background:none;border-radius:8px;padding:5px 10px;font-size:13px;white-space:nowrap}
@@ -21,7 +22,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .side{width:260px;background:var(--card);border-right:1px solid var(--line);padding:12px;overflow:auto}
 .side h2{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:4px 4px 10px}
 .appt{display:block;width:100%;text-align:left;border:1px solid var(--line);background:none;border-radius:10px;padding:10px 12px;margin-bottom:8px}
-.appt.on{border-color:var(--acc);background:var(--accbg)}
+.appt.on{border-color:var(--accbg);background:var(--accbg)}
 .appt small{color:var(--muted);display:block}
 .main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
 .feed{flex:1;overflow:auto;padding:18px 16px;display:flex;flex-direction:column;gap:8px}
@@ -41,8 +42,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .form input{flex:1;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
 .form input:focus{outline:2px solid var(--acc);outline-offset:0}
 .send{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:0 18px}
-.fab{position:absolute;right:16px;bottom:84px;width:44px;height:44px;border-radius:50%;border:1px solid var(--acc);background:var(--card);color:var(--acc);font-size:20px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.15)}
-.pop{position:absolute;right:16px;bottom:136px;width:280px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:13.5px;display:none}
+.fab{position:absolute;right:16px;bottom:84px;width:44px;height:44px;border-radius:50%;border:1px solid var(--acc);background:var(--card);color:var(--acc);font-size:20px;font-weight:600;box-shadow:none}
+.pop{position:absolute;right:16px;bottom:136px;width:280px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:0 4px 16px rgba(132,113,201,.18);font-size:13.5px;display:none}
 .pop.show{display:block}
 .pop b{display:block;margin-bottom:4px}
 .drawer{position:absolute;top:0;right:0;bottom:0;width:340px;max-width:100%;background:var(--card);border-left:1px solid var(--line);padding:14px;overflow:auto;transform:translateX(100%);transition:transform .2s;z-index:5}

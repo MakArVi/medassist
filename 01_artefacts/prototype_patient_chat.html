@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Прототип чата пациента</title>
+<style>
+:root{--bg:#f7f4fd;--card:#ffffff;--text:#241b3a;--muted:#7a6f93;--line:#e4dcf5;--acc:#7c4dff;--accbg:#efe9ff;--bot:#f3effc;--warn:#b42318;--warnbg:#fdecea;--hl:#fff3bf}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
+button{font:inherit;color:inherit;cursor:pointer}
+.demo{background:#efe9ff;color:#4b2fb0;font-size:12.5px;text-align:center;padding:4px 8px}
+.top{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--line)}
+.burger{border:1px solid var(--line);background:none;border-radius:8px;width:38px;height:38px;font-size:20px}
+.banner{flex:1;min-width:0;background:var(--accbg);border:1px solid var(--acc);border-radius:8px;padding:6px 12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.banner b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.banner small{color:var(--muted)}
+.tbtn{border:1px solid var(--acc);color:var(--acc);background:none;border-radius:8px;padding:5px 10px;font-size:13px;white-space:nowrap}
+.layout{flex:1;display:flex;min-height:0;position:relative}
+.side{width:260px;background:var(--card);border-right:1px solid var(--line);padding:12px;overflow:auto}
+.side h2{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:4px 4px 10px}
+.appt{display:block;width:100%;text-align:left;border:1px solid var(--line);background:none;border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.appt.on{border-color:var(--acc);background:var(--accbg)}
+.appt small{color:var(--muted);display:block}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+.feed{flex:1;overflow:auto;padding:18px 16px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:min(620px,86%);padding:9px 13px;border-radius:14px;white-space:pre-wrap}
+.msg.u{align-self:flex-end;background:var(--acc);color:#fff}
+.msg.a{align-self:flex-start;background:var(--bot)}
+.msg.emg{background:var(--warnbg);border:1px solid var(--warn);color:var(--warn)}
+.src{align-self:flex-start;margin:-4px 0 4px 6px;font-size:12.5px;color:var(--muted)}
+.src button{border:0;background:none;color:var(--acc);text-decoration:underline;padding:0;font-size:12.5px}
+.note{font-size:12.5px;color:var(--muted);margin-top:6px}
+.link{border:0;background:none;color:var(--acc);text-decoration:underline;padding:0}
+.typing{align-self:flex-start;color:var(--muted);font-size:13px;padding:2px 8px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;padding:8px 16px 0}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;font-size:13px}
+.chip:hover{border-color:var(--acc)}
+.form{display:flex;gap:8px;padding:12px 16px 16px}
+.form input{flex:1;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.form input:focus{outline:2px solid var(--acc);outline-offset:0}
+.send{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:0 18px}
+.fab{position:absolute;right:16px;bottom:84px;width:44px;height:44px;border-radius:50%;border:1px solid var(--acc);background:var(--card);color:var(--acc);font-size:20px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.pop{position:absolute;right:16px;bottom:136px;width:280px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:13.5px;display:none}
+.pop.show{display:block}
+.pop b{display:block;margin-bottom:4px}
+.drawer{position:absolute;top:0;right:0;bottom:0;width:340px;max-width:100%;background:var(--card);border-left:1px solid var(--line);padding:14px;overflow:auto;transform:translateX(100%);transition:transform .2s;z-index:5}
+.drawer.show{transform:none}
+.drawer h3{margin:0 0 8px;font-size:15px;display:flex;justify-content:space-between}
+.line{padding:6px 8px;border-radius:8px;margin-bottom:4px;font-size:14px}
+.line small{color:var(--muted);display:block;font-size:11.5px}
+.line.hl{background:var(--hl)}
+.line.d small::after{content:" · врач"}.line.p small::after{content:" · вы"}
+.scrim{display:none}
+@media (max-width:760px){
+ .side{position:absolute;z-index:6;top:0;bottom:0;left:0;transform:translateX(-100%);transition:transform .2s}
+ .side.show{transform:none}
+ .scrim.show{display:block;position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:5}
+ .drawer{width:100%}
+}
+@media (min-width:761px){.burger{display:none}}
+</style>
+</head>
+<body>
+<div class="demo">Демо-прототип. Все данные вымышленные. Ответы ИИ имитированы по ключевым словам, не настоящая модель.</div>
+
+<header class="top">
+ <button class="burger" id="burger" aria-label="Список приёмов">≡</button>
+ <div class="banner">
+  <div style="min-width:0"><b id="bTitle"></b><small id="bSub"></small></div>
+  <button class="tbtn" id="showTr">Расшифровка</button>
+ </div>
+</header>
+
+<div class="layout">
+ <aside class="side" id="side"><h2>Ваши приёмы</h2><div id="list"></div></aside>
+ <div class="scrim" id="scrim"></div>
+
+ <main class="main">
+  <div class="feed" id="feed" aria-live="polite"></div>
+  <div class="chips" id="chips"></div>
+  <form class="form" id="form">
+   <input id="inp" placeholder="Спросите о приёме…" autocomplete="off">
+   <button class="send" type="submit">Отправить</button>
+  </form>
+  <button class="fab" id="fab" aria-label="Справка">?</button>
+  <div class="pop" id="pop"><b>Что это за кружок?</b>На эскизе назначение не расшифровано. Здесь заглушка: справка о том, как работает ассистент. Он отвечает только по расшифровке выбранного приёма и не заменяет врача.</div>
+
+  <section class="drawer" id="drawer">
+   <h3><span>Расшифровка приёма</span><button class="link" id="closeTr">закрыть</button></h3>
+   <div id="trLines"></div>
+  </section>
+ </main>
+</div>
+
+<script>
+// ---- Вымышленные данные ----
+const APPTS = [
+ { id:'a1', date:'04.10', who:'Петров А.В.', spec:'Терапевт', topic:'Кашель и температура',
+   lines:[
+    ['12:30','d','Здравствуйте. Что беспокоит?'],
+    ['12:30','p','Кашель пятый день, вечером температура 37,5.'],
+    ['12:32','d','Горло не болит? Одышки нет?'],
+    ['12:32','p','Горло немного, одышки нет.'],
+    ['12:35','d','Послушал: хрипов нет, дыхание чистое. Похоже на вирусную инфекцию, антибиотики не нужны.'],
+    ['12:37','d','Назначаю ацетилцистеин, одна таблетка утром после еды, семь дней.'],
+    ['12:38','d','Пейте больше тёплой жидкости, не меньше полутора литров в день.'],
+    ['12:40','d','Температуру в таблетках сбивайте, только если выше 38,5.'],
+    ['12:41','d','Если температура выше 38,5 держится больше трёх дней или появится одышка, приходите раньше.'],
+    ['12:42','d','Контрольный приём через семь дней, если кашель не пройдёт.'],
+    ['12:43','d','Рентген пока не нужен.']
+   ],
+   qa:[
+    {k:['принимать','таблетк','препарат','ацетилцистеин','лекарств','как пить'], a:'Врач назначил ацетилцистеин: одна таблетка утром после еды, семь дней.', l:[5]},
+    {k:['кофе','алкогол','чай'], a:null},
+    {k:['жидкост','пить','питьё','вода'], a:'Врач рекомендовал пить больше тёплой жидкости, не меньше полутора литров в день.', l:[6]},
+    {k:['температур','жар','сбивать','жаропонижающ'], a:'Врач сказал сбивать температуру в таблетках, только если она выше 38,5.', l:[7]},
+    {k:['антибиотик'], a:'Врач сказал, что антибиотики не нужны: это похоже на вирусную инфекцию.', l:[4]},
+    {k:['рентген','снимок','флюорограф'], a:'Врач сказал, что рентген пока не нужен.', l:[10]},
+    {k:['когда прийти','повторн','контрол','следующ','снова','раньше'], a:'Контрольный приём через семь дней, если кашель не пройдёт. Прийти раньше нужно, если температура выше 38,5 держится больше трёх дней или появится одышка.', l:[8,9]},
+    {k:['диагноз','что со мной','что у меня','болезн'], a:'Врач сказал, что это похоже на вирусную инфекцию. Дыхание чистое, хрипов нет.', l:[4]}
+   ]},
+ { id:'a2', date:'12.09', who:'Сидорова Е.Н.', spec:'Невролог', topic:'Головные боли',
+   lines:[
+    ['10:00','d','Расскажите, как часто болит голова.'],
+    ['10:01','p','Два-три раза в неделю, чаще к вечеру.'],
+    ['10:05','d','Неврологически всё в порядке. МРТ сейчас не нужна.'],
+    ['10:07','d','Ведите дневник головной боли и давления две недели, фиксируйте время и что предшествовало.'],
+    ['10:09','d','Ложитесь до 23:00, меньше экрана перед сном.'],
+    ['10:11','d','Приходите через месяц с дневником.']
+   ],
+   qa:[
+    {k:['мрт','томограф','снимок'], a:'Врач сказал, что МРТ сейчас не нужна: неврологически всё в порядке.', l:[2]},
+    {k:['дневник','записывать','фиксировать'], a:'Врач просил вести дневник головной боли и давления две недели, записывать время и что предшествовало.', l:[3]},
+    {k:['сон','спать','ложиться','экран'], a:'Врач рекомендовал ложиться до 23:00 и меньше смотреть в экран перед сном.', l:[4]},
+    {k:['когда прийти','повторн','следующ','снова','через'], a:'Прийти через месяц и принести дневник.', l:[5]},
+    {k:['диагноз','что со мной','что у меня'], a:'Врач сказал, что неврологически всё в порядке. Другого диагноза в расшифровке не названо.', l:[2]}
+   ]},
+ { id:'a3', date:'03.07', who:'Петров А.В.', spec:'Терапевт', topic:'Плановый осмотр',
+   lines:[
+    ['16:00','d','Плановый осмотр. Жалоб нет?'],
+    ['16:01','p','Нет, всё хорошо.'],
+    ['16:10','d','Давление и пульс в норме.'],
+    ['16:12','d','Сдайте общий анализ крови и глюкозу натощак.'],
+    ['16:14','d','Результаты принесёте на следующий приём, через полгода.']
+   ],
+   qa:[
+    {k:['анализ','сдать','кровь','глюкоз','натощак'], a:'Врач просил сдать общий анализ крови и глюкозу натощак.', l:[3]},
+    {k:['давлени','пульс','норм'], a:'Врач сказал, что давление и пульс в норме.', l:[2]},
+    {k:['когда прийти','следующ','снова','повторн','через'], a:'Следующий приём через полгода, результаты анализов принести с собой.', l:[4]}
+   ]}
+];
+const COMMON = [
+ {k:['здравствуй','привет','добрый'], a:'Здравствуйте! Спросите о том, что было на приёме: назначения, рекомендации, когда прийти снова.', l:[]}
+];
+const EMERGENCY = ['боль в груди','не могу дышать','задыхаюсь','потерял сознание','теряю сознание','сильное кровотечение','онемела','онемение лица'];
+
+// ---- Состояние ----
+const store = {}; APPTS.forEach(a=>store[a.id]=[]);
+let cur = APPTS[0];
+
+const $ = id => document.getElementById(id);
+const feed=$('feed'), inp=$('inp');
+
+function renderList(){
+ $('list').innerHTML='';
+ APPTS.forEach(a=>{
+  const b=document.createElement('button');
+  b.className='appt'+(a===cur?' on':'');
+  b.innerHTML=`<b>${a.date} · ${a.who}</b><small>${a.spec} · ${a.topic}</small>`;
+  b.onclick=()=>{cur=a;closeSide();$('drawer').classList.remove('show');open();};
+  $('list').appendChild(b);
+ });
+}
+function open(){
+ renderList();
+ $('bTitle').textContent=`Приём ${cur.date} · ${cur.who}`;
+ $('bSub').textContent=cur.spec+' · '+cur.topic;
+ renderTr([]);
+ feed.innerHTML='';
+ if(!store[cur.id].length){
+  store[cur.id].push({t:'a',x:`Здравствуйте! Я отвечаю по расшифровке вашего приёма у врача ${cur.who} от ${cur.date}. Что вас интересует?`});
+ }
+ store[cur.id].forEach(m=>paint(m));
+ renderChips();
+ feed.scrollTop=feed.scrollHeight;
+}
+function renderChips(){
+ const c=$('chips'); c.innerHTML='';
+ const samples={a1:['Как принимать препарат?','Когда прийти снова?','Можно с кофе?'],
+                a2:['Нужна ли МРТ?','Что делать с дневником?','Когда прийти снова?'],
+                a3:['Какие анализы сдать?','Когда прийти снова?','У меня боль в груди']};
+ samples[cur.id].forEach(q=>{const b=document.createElement('button');b.className='chip';b.textContent=q;b.onclick=()=>ask(q);c.appendChild(b);});
+}
+function paint(m){
+ const d=document.createElement('div');
+ d.className='msg '+(m.t==='u'?'u':'a')+(m.emg?' emg':'');
+ d.textContent=m.x;
+ if(m.clinic){
+  const n=document.createElement('div');n.className='note';
+  n.innerHTML='Вы можете <button class="link">написать в клинику</button>.';
+  n.querySelector('button').onclick=e=>{e.target.parentNode.textContent='Заглушка: здесь откроется форма сообщения в клинику.';};
+  d.appendChild(n);
+ }
+ feed.appendChild(d);
+ if(m.l&&m.l.length){
+  const s=document.createElement('div');s.className='src';
+  const t=m.l.map(i=>cur.lines[i][0]).join(', ');
+  s.innerHTML=`Источник: расшифровка приёма ${cur.date}, ${t}. <button>Показать</button>`;
+  s.querySelector('button').onclick=()=>renderTr(m.l,true);
+  feed.appendChild(s);
+ }
+}
+function renderTr(hl,show){
+ const box=$('trLines'); box.innerHTML='';
+ cur.lines.forEach((r,i)=>{
+  const d=document.createElement('div');
+  d.className='line '+r[1]+(hl.includes(i)?' hl':'');
+  d.innerHTML=`<small>${r[0]}</small>`;
+  d.appendChild(document.createTextNode(r[2]));
+  box.appendChild(d);
+ });
+ if(show){$('drawer').classList.add('show');const h=box.querySelector('.hl');if(h)h.scrollIntoView({block:'center'});}
+}
+function answer(q){
+ const s=q.toLowerCase();
+ if(EMERGENCY.some(w=>s.includes(w)))
+  return {t:'a',emg:true,x:'Это может быть опасно. Не ждите ответа в чате: позвоните 103 или 112 или срочно обратитесь в клинику.',l:[]};
+ const hit=cur.qa.find(e=>e.k.some(w=>s.includes(w)))||COMMON.find(e=>e.k.some(w=>s.includes(w)));
+ if(hit&&hit.a) return {t:'a',x:hit.a,l:hit.l};
+ return {t:'a',x:'На этом приёме об этом не говорили, поэтому я не могу ответить. Лучше уточнить у врача.',l:[],clinic:true};
+}
+function ask(q){
+ q=q.trim(); if(!q) return;
+ const u={t:'u',x:q}; store[cur.id].push(u); paint(u); inp.value='';
+ const id=cur.id;
+ const tp=document.createElement('div');tp.className='typing';tp.textContent='Ассистент печатает…';feed.appendChild(tp);
+ feed.scrollTop=feed.scrollHeight;
+ setTimeout(()=>{
+  tp.remove();
+  const r=answer(q); store[id].push(r);
+  if(cur.id===id){paint(r);feed.scrollTop=feed.scrollHeight;}
+ },700);
+}
+function closeSide(){$('side').classList.remove('show');$('scrim').classList.remove('show');}
+
+$('form').onsubmit=e=>{e.preventDefault();ask(inp.value);};
+$('burger').onclick=()=>{$('side').classList.add('show');$('scrim').classList.add('show');};
+$('scrim').onclick=closeSide;
+$('showTr').onclick=()=>$('drawer').classList.toggle('show');
+$('closeTr').onclick=()=>$('drawer').classList.remove('show');
+$('fab').onclick=()=>$('pop').classList.toggle('show');
+open();
+</script>
+</body>
+</html>

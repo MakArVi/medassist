@@ -84,7 +84,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13.5px}
  </section>
 
  <section class="card">
-  <h2><span>2. Выжимка</span><button class="btn" id="copy" disabled>Копировать</button></h2>
+  <h2><span>2. Выжимка</span><span class="row"><button class="btn" id="toPatient">Отправить пациенту</button><button class="btn" id="copy" disabled>Копировать</button></span></h2>
   <div class="row">
    <button class="btn main" id="sum">Сделать выжимку</button>
    <div class="seg" id="mode">
@@ -425,6 +425,17 @@ $('file').onchange=()=>{
  $('audio').innerHTML='<audio controls src="'+audioUrl+'"></audio>'; $('audio').hidden=false;
  recStartT=''; lines=[]; renderTr();
  apiTranscribe(f,f.name); $('file').value='';
+};
+$('toPatient').onclick=()=>{
+ if(recording) stopRec();
+ if(!lines.length){showWarn('Сначала запишите приём или вставьте пример.');return;}
+ const d=new Date(), id='v'+d.getTime();
+ const first=(lines.find(l=>l.s==='p')||lines[0]).x;
+ const v={id,date:d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'}),who:'запись '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}),spec:'Приём',topic:first.length>40?first.slice(0,40)+'…':first,lines:lines.map(l=>[l.t||'',l.s,l.x])};
+ let all=[]; try{all=JSON.parse(localStorage.getItem('medassist_visits')||'[]');}catch(_){}
+ all.unshift(v);
+ try{localStorage.setItem('medassist_visits',JSON.stringify(all));}catch(_){showWarn('Не удалось сохранить: браузер запретил хранилище.');return;}
+ window.open('patient.html#'+id,'_blank');
 };
 $('key').onchange=()=>{try{localStorage.setItem('akey',getKey());}catch(_){}};
 if(!SR) showWarn('Этот браузер не умеет распознавать речь. Откройте страницу в Chrome или Edge. Кнопка «Вставить пример» работает везде.');

@@ -4,3 +4,4 @@ CLAUDE.md
 INDEX.md
 01_artefacts/*
 !01_artefacts/prototype_patient_chat.html
+!01_artefacts/mvp_scribe.html

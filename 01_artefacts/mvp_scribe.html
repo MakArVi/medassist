@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Запись приёма</title>
+<style>
+:root{--bg:#ffffff;--card:#ffffff;--text:#2b2540;--muted:#8a82a3;--line:#ece6f9;--acc:#8471C9;--accbg:#F3EEFF;--warn:#b42318;--warnbg:#fdecea;--rec:#d6455d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:300 15px/1.55 "Helvetica Neue",Helvetica,Arial,sans-serif}
+h1,h2,b,strong{font-weight:400}
+button{font:inherit;color:inherit;cursor:pointer}
+.demo{background:var(--accbg);color:#6a58a8;font-size:12.5px;text-align:center;padding:5px 10px}
+.wrap{max-width:780px;margin:0 auto;padding:22px 16px 60px}
+h1{font-size:24px;margin:0 0 2px}
+.sub{color:var(--muted);margin:0 0 20px}
+.card{border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.card h2{font-size:16px;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--acc);background:none;color:var(--acc);border-radius:10px;padding:8px 16px}
+.btn:hover{background:var(--accbg)}
+.btn.main{background:var(--acc);color:#fff}
+.btn.main:hover{background:#7561bb}
+.btn.rec{background:var(--rec);border-color:var(--rec);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:none;padding:8px 14px}
+.seg button.on{background:var(--accbg);color:var(--acc)}
+.status{color:var(--muted);font-size:13.5px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--rec);margin-right:6px;animation:p 1.1s infinite}
+@keyframes p{50%{opacity:.25}}
+.tr{min-height:120px;max-height:340px;overflow:auto;margin-top:12px}
+.ln{display:flex;gap:10px;padding:6px 8px;border-radius:8px;margin-bottom:3px}
+.ln:hover{background:var(--accbg)}
+.ln time{color:var(--muted);font-size:12.5px;min-width:44px;padding-top:2px}
+.ln .who{min-width:92px;color:var(--acc);font-size:13.5px;padding-top:1px;cursor:pointer;border:0;background:none;text-align:left;padding-left:0}
+.ln.p .who{color:#5a8f7b}
+.ln span.t{flex:1}
+.ln .x{border:0;background:none;color:var(--muted);opacity:0}
+.ln:hover .x{opacity:1}
+.interim{color:var(--muted);font-style:italic;padding:4px 8px}
+.empty{color:var(--muted);padding:20px 8px}
+.warn{background:var(--warnbg);color:var(--warn);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:none}
+.sum h3{font-size:13px;font-weight:400;color:var(--acc);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 6px}
+.sum ul{margin:0;padding-left:20px}
+.sum li{margin-bottom:4px}
+.sum .none{color:var(--muted)}
+.ai{white-space:pre-wrap}
+.opt{margin-top:12px;font-size:13.5px;color:var(--muted)}
+.opt input[type=password],.opt input[type=text]{font:inherit;font-size:13.5px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;width:100%;max-width:420px;color:var(--text)}
+details summary{cursor:pointer;color:var(--muted);font-size:13.5px}
+.hint{font-size:12.5px;color:var(--muted);margin-top:8px}
+.audio{margin-top:12px}
+.audio audio{width:100%}
+</style>
+</head>
+<body>
+<div class="demo">Рабочий прототип. Распознавание речи делает браузер (Chrome / Edge). Данные не сохраняются на сервере.</div>
+<div class="wrap">
+ <h1>Запись приёма</h1>
+ <p class="sub">Нажмите «Начать запись», ведите приём, затем «Сделать выжимку».</p>
+
+ <div class="warn" id="warn"></div>
+
+ <section class="card">
+  <h2><span>1. Расшифровка</span><span class="status" id="status">Готов к записи</span></h2>
+  <div class="row">
+   <button class="btn main" id="rec">Начать запись</button>
+   <div class="seg" id="seg" title="Кто сейчас говорит">
+    <button data-s="a" class="on">Авто</button>
+    <button data-s="d">Врач</button>
+    <button data-s="p">Пациент</button>
+   </div>
+   <button class="btn" id="roles">Определить роли</button>
+   <button class="btn" id="sample">Вставить пример</button>
+   <button class="btn" id="sample2" title="Реплики без ролей: проверить автоопределение">Пример без ролей</button>
+   <button class="btn" id="upload">Загрузить аудиофайл</button>
+   <input type="file" id="file" accept="audio/*,video/webm,.m4a,.mp3,.wav,.ogg,.webm" hidden>
+   <button class="btn" id="clear">Очистить</button>
+  </div>
+  <div class="hint">Режим «Авто»: роль угадывается по смыслу реплики. Кнопка «Определить роли» уточняет её через Claude (нужен ключ). Ошибку можно исправить кликом по метке слева, такая реплика больше не меняется автоматически.</div>
+  <div class="tr" id="tr"></div>
+  <div class="audio" id="audio" hidden></div>
+ </section>
+
+ <section class="card">
+  <h2><span>2. Выжимка</span><button class="btn" id="copy" disabled>Копировать</button></h2>
+  <div class="row">
+   <button class="btn main" id="sum">Сделать выжимку</button>
+   <div class="seg" id="mode">
+    <button data-m="rule" class="on">Быстрая, в браузере</button>
+    <button data-m="ai">Через Claude (нужен ключ)</button>
+   </div>
+  </div>
+  <div class="opt" id="aiOpt">
+   <details open>
+    <summary>Ключ API: Anthropic (sk-ant-…) или OpenRouter (sk-or-…)</summary>
+    <p>С ключом OpenRouter файл записи после остановки (или загруженный аудиофайл) расшифровывается моделью распознавания речи Whisper. Ключ хранится только в этом браузере. Не вставляйте ключ на чужих компьютерах.</p>
+    <input type="password" id="key" placeholder="sk-ant-… или sk-or-…" autocomplete="off">
+   </details>
+  </div>
+  <div class="sum" id="out"><p class="none">Выжимка появится здесь.</p></div>
+ </section>
+
+ <details class="hint"><summary>Не работает микрофон?</summary>
+  <ol>
+   <li>Откройте страницу в <b>Chrome или Edge</b> (не во встроенном просмотре программ и не в Firefox).</li>
+   <li>Адрес должен начинаться с <b>https://</b> или <b>http://localhost</b>. Если это файл с диска (file://), микрофон не заработает.</li>
+   <li>Разрешите микрофон: значок замка слева от адреса → «Микрофон» → «Разрешить».</li>
+   <li>Нужен интернет: Chrome распознаёт речь на сервере.</li>
+   <li>Закройте программы, которые занимают микрофон (Zoom, Teams, Discord).</li>
+   <li>В Windows: Параметры → Конфиденциальность → Микрофон → разрешить доступ браузеру.</li>
+  </ol>
+ </details>
+ <p class="hint">Важно: в Chrome распознавание речи отправляет звук на серверы Google. Для реальных пациентов нужен собственный сервер распознавания в РФ и согласие пациента (152-ФЗ). Здесь используйте только тестовые данные.</p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let lines=[];            // {t:'12:30', s:'d'|'p', x:'...', auto:'rule'|'ai'|false}
+let speaker='a', recording=false, rec=null, mode='rule';
+let stream=null, mr=null, chunks=[], mime='', audioUrl=null;   // запись звука
+let lastInterim='', plainTimer=null, pendingPlain=false;       // недоговорённый кусок фразы
+
+const NAME={d:'Врач',p:'Пациент'};
+const hhmm=()=>new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+
+// ---------- API: Anthropic или OpenRouter (по префиксу ключа) ----------
+const OR_MODEL='google/gemini-3.8-flash';   // только для кнопок «Определить роли» и «Через Claude»
+const getKey=()=>$('key').value.trim();
+const isOR=()=>getKey().startsWith('sk-or-');
+async function llm(system,user,maxTokens){
+ const key=getKey();
+ if(!key) throw new Error('Вставьте ключ API.');
+ try{localStorage.setItem('akey',key);}catch(_){}
+ if(isOR()){
+  const r=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',
+   headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json','X-Title':'Medassist prototype'},
+   body:JSON.stringify({model:OR_MODEL,max_tokens:maxTokens,temperature:0,messages:[{role:'system',content:system},{role:'user',content:user}]})});
+  const j=await r.json();
+  if(!r.ok||j.error) throw new Error((j.error&&j.error.message)||('Ошибка OpenRouter '+r.status));
+  return j.choices[0].message.content||'';
+ }
+ const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+  headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+  body:JSON.stringify({model:'claude-sonnet-5-5',max_tokens:maxTokens,system,messages:[{role:'user',content:user}]})});
+ const j=await r.json();
+ if(!r.ok) throw new Error((j.error&&j.error.message)||('Ошибка API '+r.status));
+ return j.content.map(c=>c.text||'').join('');
+}
+
+// ---------- Расшифровка файла записи через OpenRouter (Whisper) ----------
+const STT_MODEL='openai/whisper-large-v3';   // модель распознавания речи, только текст
+async function transcribeFile(blob,name){
+ const fd=new FormData();
+ fd.append('file',blob,name);
+ fd.append('model',STT_MODEL);
+ fd.append('language','ru');
+ const r=await fetch('https://openrouter.ai/api/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+getKey()},body:fd});
+ const j=await r.json().catch(()=>({}));
+ if(!r.ok||j.error) throw new Error((j.error&&j.error.message)||('Ошибка OpenRouter '+r.status));
+ return (j.text||'').trim();
+}
+let recStartT='', apiBusy=false;
+async function apiTranscribe(blob,name){
+ if(!isOR()) return;
+ if(blob.size>25*1024*1024){showWarn('Файл больше 25 МБ: API его не примет.');return;}
+ apiBusy=true; showWarn(''); updRec();
+ $('out').innerHTML='<p class="none">Расшифровываю файл записи…</p>';
+ try{
+  const text=await transcribeFile(blob,name);
+  // текст Whisper → реплики по предложениям; роли размечаются правилами, текст не меняется
+  const parts=text.split(/(?<=[.!?…])\s+/).map(x=>x.trim()).filter(Boolean);
+  lines=[]; parts.forEach(x=>lines.push({t:recStartT,s:guessRole(x,lines[lines.length-1]),x,auto:'rule'}));
+  renderTr();
+ }catch(err){
+  showWarn('Файл не расшифрован ('+err.message+'). Показан текст, распознанный браузером.');
+ }
+ apiBusy=false; updRec(); showPlain();
+}
+
+// ---------- Определение ролей ----------
+const DOC_RE=/что (вас )?беспокоит|на что жалуетесь|как давно|давно ли|покажите|откройте|дышите|разденьтесь|лягте|назначаю|рекомендую|принимайте|послушал|осмотр|давайте|скажите|есть ли|бывает ли|не болит|аллерги|хронически|похоже на|диагноз|курс |контрольн|на приём|следующий приём/i;
+const IMP_RE=/(^|\s)[а-яё]+(йте|ите|ьте)([\s,.!?]|$)/i;
+const PAT_RE=/у меня|мне |^я |\sя |меня |болит|беспокоит|не могу|чувствую|кашляю|стало хуже|спасибо|доктор|можно ли|а можно|что мне делать|принимал|принимала/i;
+function guessRole(x,prev){
+ let d=0,p=0;
+ if(DOC_RE.test(x)) d+=2;
+ if(IMP_RE.test(x)) d+=1;
+ if(PAT_RE.test(x)) p+=2;
+ if(d>p) return 'd';
+ if(p>d) return 'p';
+ return prev?(prev.s==='d'?'p':'d'):'d';   // ничья: реплики чередуются
+}
+async function rolesAI(){
+ if(!getKey()) throw new Error('Для точного определения ролей вставьте ключ API. Пока роли угаданы правилами.');
+ const text=lines.map((l,i)=>`${i+1}. ${l.x}`).join('\n');
+ const raw=await llm('Тебе дают пронумерованные реплики приёма у врача без указания говорящего. Определи по смыслу и ходу диалога, кто произносит каждую: врач (d) или пациент (p). Врач задаёт уточняющие вопросы, осматривает, ставит заключение, назначает и рекомендует. Пациент описывает жалобы, отвечает на вопросы, спрашивает о лечении. Верни только JSON-массив из строк "d" или "p", по одной на реплику, в том же порядке, без пояснений.',text,600);
+ const arr=JSON.parse(raw.slice(raw.indexOf('['),raw.lastIndexOf(']')+1));
+ if(!Array.isArray(arr)||arr.length!==lines.length) throw new Error('Модель вернула роли не для всех реплик. Попробуйте ещё раз.');
+ return arr;
+}
+$('roles').onclick=async()=>{
+ if(recording) stopRec();
+ if(!lines.length){showWarn('Сначала запишите приём или вставьте пример.');return;}
+ const b=$('roles'); b.disabled=true; showWarn('');
+ try{
+  const arr=await rolesAI();
+  lines.forEach((l,i)=>{ if(l.auto&&(arr[i]==='d'||arr[i]==='p')){l.s=arr[i];l.auto='ai';} });
+ }catch(err){
+  // без ключа или при ошибке: пересчитать правилами для автоматических реплик
+  let prev=null;
+  lines.forEach(l=>{ if(l.auto) {l.s=guessRole(l.x,prev);l.auto='rule';} prev=l; });
+  showWarn(err.message);
+ }
+ renderTr(); b.disabled=false;
+};
+
+// ---------- Расшифровка ----------
+function renderTr(interim){
+ const box=$('tr'); box.innerHTML='';
+ if(!lines.length&&!interim){const e=document.createElement('div');e.className='empty';e.textContent='Здесь появится текст приёма.';box.appendChild(e);return;}
+ lines.forEach((l,i)=>{
+  const d=document.createElement('div');d.className='ln '+l.s;
+  const t=document.createElement('time');t.textContent=l.t;
+  const w=document.createElement('button');w.className='who';w.textContent=NAME[l.s]+(l.auto?(l.auto==='ai'?' · ИИ':' · авто'):'');w.title='Сменить говорящего';
+  w.onclick=()=>{l.s=l.s==='d'?'p':'d';l.auto=false;renderTr();};
+  const x=document.createElement('span');x.className='t';x.textContent=l.x;
+  const del=document.createElement('button');del.className='x';del.textContent='✕';del.title='Удалить реплику';
+  del.onclick=()=>{lines.splice(i,1);renderTr();};
+  d.append(t,w,x,del);box.appendChild(d);
+ });
+ if(interim){const e=document.createElement('div');e.className='interim';e.textContent=interim;box.appendChild(e);}
+ box.scrollTop=box.scrollHeight;
+}
+function addLine(x){
+ x=x.trim(); if(!x) return;
+ x=x.charAt(0).toUpperCase()+x.slice(1);
+ const auto=speaker==='a';
+ lines.push({t:hhmm(),s:auto?guessRole(x,lines[lines.length-1]):speaker,x,auto:auto?'rule':false});
+ renderTr();
+}
+
+// ---------- Распознавание речи и запись звука ----------
+function setStatus(h,isRec){$('status').innerHTML=(isRec?'<span class="dot"></span>':'')+h;}
+function showWarn(m){const w=$('warn');w.textContent=m;w.style.display=m?'block':'none';}
+
+async function startRec(){
+ if(!SR&&!isOR()){showWarn('Этот браузер не умеет распознавать речь. Откройте страницу в Chrome или Edge или вставьте ключ OpenRouter. Кнопка «Вставить пример» работает везде.');return;}
+ if(!window.isSecureContext||location.protocol==='file:'){
+  showWarn('Страница открыта как файл ('+location.protocol+'//). Микрофон работает только на https:// или http://localhost. Запустите страницу через локальный сервер или с GitHub Pages.');return;
+ }
+ try{
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) throw {name:'NoApi'};
+  stream=await navigator.mediaDevices.getUserMedia({audio:true});
+ }catch(e){
+  const m={NotAllowedError:'Доступ к микрофону запрещён. Нажмите на значок замка слева от адреса, выберите «Микрофон: Разрешить» и обновите страницу.',
+           PermissionDeniedError:'Доступ к микрофону запрещён. Разрешите его в настройках сайта.',
+           NotFoundError:'Микрофон не найден. Подключите его и проверьте, что он выбран в настройках Windows.',
+           NotReadableError:'Микрофон занят другой программой (Zoom, Teams и т. п.). Закройте её и повторите.',
+           NoApi:'Браузер не даёт доступ к микрофону на этой странице.'}[e.name]||('Не удалось получить доступ к микрофону: '+(e.name||e));
+  showWarn(m);return;
+ }
+ showWarn('');
+
+ // запись звука
+ chunks=[]; $('audio').hidden=true; $('audio').innerHTML='';
+ if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl=null;}
+ try{
+  mime=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||'';
+  mr=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
+  mr.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+  mr.onstop=()=>{ showAudio(); if(chunks.length){ const ext=(mime||'audio/webm').includes('mp4')?'m4a':'webm'; apiTranscribe(new Blob(chunks,{type:mime||'audio/webm'}),'priem.'+ext); } };
+  mr.start(1000);
+ }catch(_){mr=null;}
+ recStartT=hhmm(); lines=[]; renderTr();
+
+ if(!SR){ lastInterim=''; recording=true; updRec(); return; }   // без живого распознавания: только запись для API
+ rec=new SR(); rec.lang='ru-RU'; rec.continuous=true; rec.interimResults=true;
+ rec.onresult=e=>{
+  let interim='';
+  for(let i=e.resultIndex;i<e.results.length;i++){
+   const r=e.results[i];
+   if(r.isFinal) addLine(r[0].transcript); else interim+=r[0].transcript;
+  }
+  lastInterim=interim;
+  renderTr(interim);
+ };
+ rec.onerror=e=>{
+  if(e.error==='no-speech'||e.error==='aborted') return;
+  stopRec();
+  const m={'not-allowed':'Нет доступа к микрофону. Разрешите его в настройках сайта и попробуйте снова.',
+           'service-not-allowed':'Распознавание речи запрещено в этом браузере или на этой странице.',
+           'network':'Нет связи со службой распознавания речи. Проверьте интернет.',
+           'audio-capture':'Микрофон не найден.'}[e.error]||('Ошибка распознавания: '+e.error);
+  showWarn(m);
+ };
+ rec.onend=()=>{ if(recording){ try{rec.start();}catch(_){} } else { updRec(); finishText(); } }; // Chrome сам останавливается после паузы
+ lastInterim=''; recording=true; updRec();
+ try{rec.start();}catch(err){showWarn('Не удалось запустить запись: '+err.message);stopRec();}
+}
+function stopRec(){
+ recording=false;
+ try{rec&&rec.stop();}catch(_){}
+ try{if(mr&&mr.state!=='inactive') mr.stop();}catch(_){}
+ if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+ updRec();renderTr();
+ pendingPlain=true;
+ $('out').innerHTML='<p class="none">Дописываю расшифровку…</p>';
+ clearTimeout(plainTimer); plainTimer=setTimeout(finishText,2500);   // если браузер не прислал окончание
+}
+// после остановки: дописать последний кусок фразы и показать текст расшифровки
+function finishText(){
+ clearTimeout(plainTimer);
+ if(lastInterim.trim()){ addLine(lastInterim); lastInterim=''; }
+ renderTr();
+ if(pendingPlain){ pendingPlain=false; showPlain(); }
+}
+function showPlain(){
+ const out=$('out');
+ if(apiBusy){ out.innerHTML='<p class="none">Расшифровываю запись через API…</p>'; return; }
+ out.innerHTML='';
+ if(!lines.length){ out.innerHTML='<p class="none">Речь не распознана. Проверьте микрофон и говорите ближе.</p>'; return; }
+ const h=document.createElement('h3'); h.textContent='Текст расшифровки'; out.appendChild(h);
+ const d=document.createElement('div'); d.className='ai'; d.textContent=lines.map(l=>l.x).join('\n'); out.appendChild(d);
+ $('copy').disabled=false;
+}
+function showAudio(){
+ if(!chunks.length) return;
+ const blob=new Blob(chunks,{type:mime||'audio/webm'});
+ audioUrl=URL.createObjectURL(blob);
+ const ext=(mime||'audio/webm').includes('mp4')?'m4a':'webm';
+ $('audio').innerHTML='<audio controls src="'+audioUrl+'"></audio><div class="row" style="margin-top:8px"><a class="btn" style="text-decoration:none" download="priem.'+ext+'" href="'+audioUrl+'">Скачать запись</a></div>';
+ $('audio').hidden=false;
+}
+function updRec(){
+ const b=$('rec');
+ b.textContent=recording?'Остановить запись':'Начать запись';
+ b.classList.toggle('rec',recording);b.classList.toggle('main',!recording);
+ setStatus(recording?'Идёт запись…':apiBusy?'Расшифровка через API…':'Готов к записи',recording);
+}
+$('rec').onclick=()=>recording?stopRec():startRec();
+$('seg').onclick=e=>{const b=e.target.closest('button');if(!b)return;speaker=b.dataset.s;[...$('seg').children].forEach(x=>x.classList.toggle('on',x===b));};
+$('clear').onclick=()=>{lines=[];renderTr();$('out').innerHTML='<p class="none">Выжимка появится здесь.</p>';$('copy').disabled=true;};
+$('sample').onclick=()=>{
+ const S=[['d','Здравствуйте. Что беспокоит?'],['p','Кашель пятый день, вечером температура 37,5.'],['d','Горло не болит? Одышки нет?'],['p','Горло немного, одышки нет.'],
+  ['d','Послушал: хрипов нет, дыхание чистое. Похоже на вирусную инфекцию, антибиотики не нужны.'],['d','Назначаю ацетилцистеин, одна таблетка утром после еды, семь дней.'],
+  ['d','Пейте больше тёплой жидкости, не меньше полутора литров в день.'],['d','Температуру в таблетках сбивайте, только если выше 38,5.'],
+  ['d','Если температура выше 38,5 держится больше трёх дней или появится одышка, приходите раньше.'],['d','Сдайте общий анализ крови.'],['d','Контрольный приём через семь дней, если кашель не пройдёт.']];
+ lines=S.map(([s,x],i)=>({t:'12:'+String(30+i).padStart(2,'0'),s,x}));renderTr();
+};
+$('sample2').onclick=()=>{
+ $('sample').click();
+ let prev=null;
+ lines.forEach(l=>{l.auto='rule';l.s=guessRole(l.x,prev);prev=l;});renderTr();
+};
+
+// ---------- Выжимка: быстрая, правилами ----------
+const CATS=[
+ ['Когда прийти', /приходите|прийти|приём через|контрол|повторн|явк|записаться|через (неделю|месяц|\d+|[а-я]+ (дня|дней|недел|месяц))/i],
+ ['Обследования', /анализ|сдайте|рентген|мрт|узи|\bкт\b|экг|флюорограф|исследован|направлен|обследован/i],
+ ['Назначения', /назнач|принима|таблетк|\bмг\b|капл|укол|курс|препарат|раз в день|утром|вечером|после еды|до еды|мазь|ингаляц/i],
+ ['Рекомендации', /рекоменду|пейте|избегайте|нужно|нельзя|не стоит|старайтесь|соблюда|режим|покой|диет|ложитесь|сбивайте|больше |меньше /i],
+ ['Заключение врача', /похоже на|диагноз|признак|подозрен|в норме|норма|хрипов нет|чистое|не нужн/i]
+];
+function summarizeRules(){
+ const sec={}; CATS.forEach(([n])=>sec[n]=[]); sec['Жалобы пациента']=[];
+ const tagged=lines.some(l=>l.s==='p');
+ lines.forEach(l=>{
+  if(l.s==='p'&&tagged){ sec['Жалобы пациента'].push(l.x); return; }
+  for(const [n,re] of CATS){ if(re.test(l.x)){ sec[n].push(l.x); return; } }
+ });
+ return ['Жалобы пациента','Заключение врача','Назначения','Рекомендации','Обследования','Когда прийти'].map(n=>[n,sec[n]]);
+}
+function renderRules(parts){
+ const out=$('out'); out.innerHTML='';
+ parts.forEach(([n,items])=>{
+  const h=document.createElement('h3');h.textContent=n;out.appendChild(h);
+  if(!items.length){const p=document.createElement('p');p.className='none';p.textContent='На приёме не обсуждалось';out.appendChild(p);return;}
+  const ul=document.createElement('ul');
+  items.forEach(t=>{const li=document.createElement('li');li.textContent=t;ul.appendChild(li);});
+  out.appendChild(ul);
+ });
+}
+
+// ---------- Выжимка: Claude (опционально) ----------
+async function summarizeAI(){
+ if(!getKey()) throw new Error('Вставьте ключ API или выберите быструю выжимку.');
+ const text=lines.map(l=>`[${l.t}] ${NAME[l.s]}: ${l.x}`).join('\n');
+ return await llm('Ты помощник врача. Тебе дают расшифровку приёма. Составь краткую выжимку на русском строго по тексту расшифровки, ничего не выдумывай и не ставь новых диагнозов. Разделы, каждый с новой строки заглавными буквами: ЖАЛОБЫ, ЗАКЛЮЧЕНИЕ ВРАЧА, НАЗНАЧЕНИЯ, РЕКОМЕНДАЦИИ, ОБСЛЕДОВАНИЯ, КОГДА ПРИЙТИ. Если раздела нет в расшифровке, напиши «не обсуждалось». Дозировки и сроки переноси точно как сказано. Без markdown-разметки.',text,1200);
+}
+
+$('mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;[...$('mode').children].forEach(x=>x.classList.toggle('on',x===b));};
+$('sum').onclick=async()=>{
+ if(recording){ stopRec(); pendingPlain=false; }
+ if(!lines.length){showWarn('Сначала запишите приём или вставьте пример.');return;}
+ showWarn('');
+ const out=$('out'),btn=$('sum');
+ btn.disabled=true;
+ try{
+  if(mode==='rule'){ renderRules(summarizeRules()); }
+  else{
+   out.innerHTML='<p class="none">Claude читает расшифровку…</p>';
+   const t=await summarizeAI();
+   out.innerHTML='';const d=document.createElement('div');d.className='ai';d.textContent=t;out.appendChild(d);
+  }
+  $('copy').disabled=false;
+ }catch(err){ showWarn(err.message); out.innerHTML='<p class="none">Выжимка не получилась.</p>'; }
+ btn.disabled=false;
+};
+$('copy').onclick=async()=>{
+ try{await navigator.clipboard.writeText($('out').innerText);$('copy').textContent='Скопировано';setTimeout(()=>$('copy').textContent='Копировать',1500);}catch(_){showWarn('Не удалось скопировать. Выделите текст вручную.');}
+};
+try{const k=localStorage.getItem('akey');if(k)$('key').value=k;}catch(_){}
+$('upload').onclick=()=>{
+ if(!isOR()){showWarn('Чтобы расшифровать файл, вставьте ключ OpenRouter (sk-or-…) в поле «Ключ API».');return;}
+ $('file').click();
+};
+$('file').onchange=()=>{
+ const f=$('file').files[0]; if(!f) return;
+ if(recording) stopRec();
+ if(audioUrl){URL.revokeObjectURL(audioUrl);}
+ audioUrl=URL.createObjectURL(f);
+ $('audio').innerHTML='<audio controls src="'+audioUrl+'"></audio>'; $('audio').hidden=false;
+ recStartT=''; lines=[]; renderTr();
+ apiTranscribe(f,f.name); $('file').value='';
+};
+$('key').onchange=()=>{try{localStorage.setItem('akey',getKey());}catch(_){}};
+if(!SR) showWarn('Этот браузер не умеет распознавать речь. Откройте страницу в Chrome или Edge. Кнопка «Вставить пример» работает везде.');
+renderTr();
+</script>
+</body>
+</html>

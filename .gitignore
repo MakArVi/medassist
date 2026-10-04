@@ -1,1 +1,6 @@
 .obsidian/
+00_input/
+CLAUDE.md
+INDEX.md
+01_artefacts/*
+!01_artefacts/prototype_patient_chat.html

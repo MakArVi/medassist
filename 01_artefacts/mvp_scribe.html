@@ -314,18 +314,19 @@ let meterCtx=null, meterRaf=0, peak=0, gotResult=false, watchT=null;
 function startMeter(st){
  try{
   peak=0; meterCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(meterCtx.state==='suspended') meterCtx.resume();
   const an=meterCtx.createAnalyser(); an.fftSize=512; meterCtx.createMediaStreamSource(st).connect(an);
   const buf=new Float32Array(an.fftSize);
   const loop=()=>{
    an.getFloatTimeDomainData(buf);
    let m=0; for(const v of buf) m=Math.max(m,Math.abs(v));
    peak=Math.max(peak,m);
-   if(recording){ const n=Math.min(5,Math.round(m*25)); setStatus('Идёт запись… '+'▮'.repeat(n)+'▯'.repeat(5-n),true); meterRaf=requestAnimationFrame(loop); }
+   if(meterCtx){ const n=Math.min(5,Math.round(m*25)); setStatus('Идёт запись… '+'▮'.repeat(n)+'▯'.repeat(5-n),true); meterRaf=requestAnimationFrame(loop); }
   };
   loop();
  }catch(_){}
 }
-function stopMeter(){ cancelAnimationFrame(meterRaf); clearTimeout(watchT); try{meterCtx&&meterCtx.close();}catch(_){} meterCtx=null; }
+function stopMeter(){ const c=meterCtx; meterCtx=null; cancelAnimationFrame(meterRaf); clearTimeout(watchT); try{c&&c.close();}catch(_){} }
 function stopRec(){
  recording=false; stopMeter();
  try{rec&&rec.stop();}catch(_){}

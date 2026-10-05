@@ -275,6 +275,7 @@ async function startRec(){
   mr.start(1000);
  }catch(_){mr=null;}
  recStartT=hhmm(); lines=[]; renderTr();
+ startMeter(stream);
 
  if(!SR){ lastInterim=''; recording=true; updRec(); return; }   // без живого распознавания: только запись для API
  rec=new SR(); rec.lang='ru-RU'; rec.continuous=true; rec.interimResults=true;
@@ -284,6 +285,7 @@ async function startRec(){
    const r=e.results[i];
    if(r.isFinal) addLine(r[0].transcript); else interim+=r[0].transcript;
   }
+  gotResult=true;
   lastInterim=interim;
   renderTr(interim);
  };
@@ -299,9 +301,33 @@ async function startRec(){
  rec.onend=()=>{ if(recording){ try{rec.start();}catch(_){} } else { updRec(); finishText(); } }; // Chrome сам останавливается после паузы
  lastInterim=''; recording=true; updRec();
  try{rec.start();}catch(err){showWarn('Не удалось запустить запись: '+err.message);stopRec();}
+ // проверка через 8 с: пришёл ли текст и слышен ли звук
+ gotResult=false; clearTimeout(watchT);
+ watchT=setTimeout(()=>{
+  if(!recording||gotResult) return;
+  if(peak<0.02) showWarn('Микрофон не слышит звук. Откройте chrome://settings/content/microphone и выберите рабочий микрофон (например, «Набор микрофонов Intel»), затем обновите страницу.');
+  else showWarn('Звук есть, но браузер не возвращает текст: служба распознавания Google, скорее всего, недоступна из вашей сети. Попробуйте Microsoft Edge или VPN. Либо вставьте ключ OpenRouter в поле «Ключ API» — после остановки запись расшифруется через Whisper.');
+ },8000);
 }
+// индикатор громкости рядом со статусом
+let meterCtx=null, meterRaf=0, peak=0, gotResult=false, watchT=null;
+function startMeter(st){
+ try{
+  peak=0; meterCtx=new (window.AudioContext||window.webkitAudioContext)();
+  const an=meterCtx.createAnalyser(); an.fftSize=512; meterCtx.createMediaStreamSource(st).connect(an);
+  const buf=new Float32Array(an.fftSize);
+  const loop=()=>{
+   an.getFloatTimeDomainData(buf);
+   let m=0; for(const v of buf) m=Math.max(m,Math.abs(v));
+   peak=Math.max(peak,m);
+   if(recording){ const n=Math.min(5,Math.round(m*25)); setStatus('Идёт запись… '+'▮'.repeat(n)+'▯'.repeat(5-n),true); meterRaf=requestAnimationFrame(loop); }
+  };
+  loop();
+ }catch(_){}
+}
+function stopMeter(){ cancelAnimationFrame(meterRaf); clearTimeout(watchT); try{meterCtx&&meterCtx.close();}catch(_){} meterCtx=null; }
 function stopRec(){
- recording=false;
+ recording=false; stopMeter();
  try{rec&&rec.stop();}catch(_){}
  try{if(mr&&mr.state!=='inactive') mr.stop();}catch(_){}
  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
